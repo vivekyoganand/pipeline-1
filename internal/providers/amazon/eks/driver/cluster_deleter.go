@@ -69,10 +69,29 @@ func (cd EKSClusterDeleter) DeleteCluster(ctx context.Context, eksCluster *clust
 		"organizationID": eksCluster.GetOrganizationId(),
 		"forced":         forced,
 	})
+
+	status, err := eksCluster.GetStatus()
+	if err != nil {
+		return errors.WrapIf(err, "failed to get cluster status")
+	}
+
+	runningWorkflowID := eksCluster.GetCurrentWorkflowID()
+	if (status.Status == pkgCluster.Creating || status.Status == pkgCluster.Updating) && runningWorkflowID != "" {
+
+		wexec, err := cd.workflowClient.DescribeWorkflowExecution(ctx, runningWorkflowID, "")
+		if err != nil {
+			logger.WithField("workflowID", runningWorkflowID).Error(errors.WrapIf(err, "failed to describe workflow"))
+		} else {
+			for _, child := range wexec.PendingChildren {
+				cd.terminateWorkflow(logger, ctx, *child.WorkflowID)
+			}
+		}
+		cd.terminateWorkflow(logger, ctx, runningWorkflowID)
+	}
+
 	logger.Info("start deleting EKS Cluster")
 
 	modelCluster := eksCluster.GetEKSModel()
-
 	nodePoolNames := make([]string, 0)
 	for _, nodePool := range modelCluster.NodePools {
 		nodePoolNames = append(nodePoolNames, nodePool.Name)
@@ -133,4 +152,12 @@ func (cd EKSClusterDeleter) DeleteCluster(ctx context.Context, eksCluster *clust
 	}
 
 	return nil
+}
+
+func (cd EKSClusterDeleter) terminateWorkflow(logger *logrus.Entry, ctx context.Context, workflowID string) {
+	logger.WithField("workflowID", workflowID).Info("terminate workflow")
+	err := cd.workflowClient.TerminateWorkflow(ctx, workflowID, "", "cluster delete", nil)
+	if err != nil {
+		logger.WithField("workflowID", workflowID).Error(errors.WrapIf(err, "failed to terminate workflow"))
+	}
 }

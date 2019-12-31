@@ -259,6 +259,10 @@ func (c *EKSCluster) createAWSCredentialsFromSecret() (*credentials.Credentials,
 	return verify.CreateAWSCredentials(clusterSecret.Values), nil
 }
 
+func (c *EKSCluster) GetCurrentWorkflowID() string {
+	return c.modelCluster.EKS.CurrentWorkflowID
+}
+
 func (c *EKSCluster) SetCurrentWorkflowID(workflowID string) error {
 	return c.modelCluster.EKS.SetCurrentWorkflowID(workflowID)
 }
