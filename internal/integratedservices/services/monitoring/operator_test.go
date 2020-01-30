@@ -75,10 +75,10 @@ func TestIntegratedServiceOperator_Apply(t *testing.T) {
 	op := MakeIntegratedServiceOperator(clusterGetter, clusterService, helmService, &kubernetesService, Config{
 		Charts: ChartsConfig{
 			Operator: ChartConfig{
-				Values: map[string]interface{}{},
+				Values: "",
 			},
 			Pushgateway: ChartConfig{
-				Values: map[string]interface{}{},
+				Values: "",
 			},
 		},
 	}, logger, secretStore)

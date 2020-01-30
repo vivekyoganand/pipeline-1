@@ -92,10 +92,10 @@ func (m IntegratedServiceManager) GetOutput(ctx context.Context, clusterID uint,
 	var pushgatewayValues = m.config.Charts.Pushgateway.Values
 
 	out := integratedservices.IntegratedServiceOutput{
-		"grafana":      m.getComponentOutput(ctx, clusterID, newGrafanaOutputHelper(kubeConfig, boundSpec), endpoints, m.config.Namespace, prometheusOperatorReleaseName, operatorValues, m.config.Images.Grafana),
-		"prometheus":   m.getComponentOutput(ctx, clusterID, newPrometheusOutputHelper(kubeConfig, boundSpec), endpoints, m.config.Namespace, prometheusOperatorReleaseName, operatorValues, m.config.Images.Prometheus),
-		"alertmanager": m.getComponentOutput(ctx, clusterID, newAlertmanagerOutputHelper(kubeConfig, boundSpec), endpoints, m.config.Namespace, prometheusOperatorReleaseName, operatorValues, m.config.Images.Alertmanager),
-		"pushgateway":  m.getComponentOutput(ctx, clusterID, newPushgatewayOutputHelper(kubeConfig, boundSpec), endpoints, m.config.Namespace, prometheusPushgatewayReleaseName, pushgatewayValues, m.config.Images.Pushgateway),
+		"grafana":      m.getComponentOutput(ctx, clusterID, newGrafanaOutputHelper(kubeConfig, boundSpec), endpoints, m.config.Namespace, prometheusOperatorReleaseName, operatorValues, grafanaImageTag),
+		"prometheus":   m.getComponentOutput(ctx, clusterID, newPrometheusOutputHelper(kubeConfig, boundSpec), endpoints, m.config.Namespace, prometheusOperatorReleaseName, operatorValues, prometheusImageTag),
+		"alertmanager": m.getComponentOutput(ctx, clusterID, newAlertmanagerOutputHelper(kubeConfig, boundSpec), endpoints, m.config.Namespace, prometheusOperatorReleaseName, operatorValues, alertmanagerImageTag),
+		"pushgateway":  m.getComponentOutput(ctx, clusterID, newPushgatewayOutputHelper(kubeConfig, boundSpec), endpoints, m.config.Namespace, prometheusPushgatewayReleaseName, pushgatewayValues, pushgatewayImageTag),
 		"prometheusOperator": map[string]interface{}{
 			"version": m.config.Charts.Operator.Version,
 		},
@@ -131,8 +131,8 @@ func (m IntegratedServiceManager) getComponentOutput(
 	endpoints []*pkgHelm.EndpointItem,
 	pipelineSystemNamespace string,
 	releaseName string,
-	values map[string]interface{},
-	config ImageConfig,
+	values services.ValuesConfig,
+	defaultTag string,
 ) map[string]interface{} {
 	var out = make(map[string]interface{})
 
@@ -144,9 +144,7 @@ func (m IntegratedServiceManager) getComponentOutput(
 
 	writeSecretID(ctx, o, clusterID, out)
 	writeURL(o, endpoints, releaseName, out)
-	// TODO (colin): put back after the values can came from config
-	// writeVersion(o, values, out)
-	out[versionKey] = config.Tag
+	writeVersion(o, values, defaultTag, out)
 	if err := writeServiceURL(o, m.endpointsService, pipelineSystemNamespace, out); err != nil {
 		m.logger.Warn(fmt.Sprintf("failed to get service url: %s", err.Error()))
 	}

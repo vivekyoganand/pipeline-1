@@ -74,17 +74,27 @@ type outputManager struct {
 	logger      common.Logger
 }
 
-//func writeVersion(m outputManager, deploymentValues map[string]interface{}, output map[string]interface{}) {
-//	if m.isEnabled() && deploymentValues != nil {
-//		var ok = true
-//		if m.getTopLevelDeploymentKey() != "" {
-//			deploymentValues, ok = deploymentValues[m.getTopLevelDeploymentKey()].(map[string]interface{})
-//		}
-//		if ok {
-//			output[versionKey] = m.getVersionFromValues(deploymentValues)
-//		}
-//	}
-//}
+func writeVersion(m outputManager, configValues services.ValuesConfig, defaultTag string, output map[string]interface{}) {
+	deploymentValues, err := configValues.ToMap()
+	if err != nil {
+		m.logger.Error(fmt.Sprintf("failed to convert config values to map: %s", err.Error()))
+		return
+	}
+
+	if m.isEnabled() && deploymentValues != nil {
+		var ok = true
+		if m.getTopLevelDeploymentKey() != "" {
+			deploymentValues, ok = deploymentValues[m.getTopLevelDeploymentKey()].(map[string]interface{})
+		}
+		if ok {
+			version := m.getVersionFromValues(deploymentValues)
+			if version == "" {
+				version = defaultTag
+			}
+			output[versionKey] = version
+		}
+	}
+}
 
 func writeURL(m outputManager, endpoints []*pkgHelm.EndpointItem, releaseName string, output map[string]interface{}) {
 	if m.isEnabled() {

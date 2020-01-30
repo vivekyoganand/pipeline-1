@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"emperror.dev/errors"
-	"github.com/mitchellh/copystructure"
 	"github.com/mitchellh/mapstructure"
 	"k8s.io/api/storage/v1beta1"
 
@@ -152,7 +151,7 @@ func (op IntegratedServiceOperator) Apply(ctx context.Context, clusterID uint, s
 	// Pushgateway
 	if boundSpec.Pushgateway.Enabled {
 		// install Prometheus Pushgateway
-		if err := op.installPrometheusPushGateway(ctx, cluster, boundSpec.Pushgateway, logger); err != nil {
+		if err := op.installPrometheusPushGateway(ctx, cluster); err != nil {
 			return errors.WrapIf(err, "failed to install Prometheus Pushgateway")
 		}
 	}
@@ -214,19 +213,17 @@ func (op IntegratedServiceOperator) Deactivate(ctx context.Context, clusterID ui
 func (op IntegratedServiceOperator) installPrometheusPushGateway(
 	ctx context.Context,
 	cluster integratedserviceadapter.Cluster,
-	spec pushgatewaySpec,
-	logger common.Logger,
 ) error {
 	var chartValues = &prometheusPushgatewayValues{
 		Image: imageValues{
-			Repository: op.config.Images.Pushgateway.Repository,
-			Tag:        op.config.Images.Pushgateway.Tag,
+			Repository: pushgatewayRepoName,
+			Tag:        pushgatewayImageTag,
 		},
 	}
 
-	pushgatewayConfigValues, err := copystructure.Copy(op.config.Charts.Pushgateway.Values)
+	pushgatewayConfigValues, err := op.config.Charts.Operator.Values.ToMap()
 	if err != nil {
-		return errors.WrapIf(err, "failed to copy pushgateway values")
+		return errors.WrapIf(err, "failed to convert pushgateway values")
 	}
 	valuesBytes, err := mergeOperatorValuesWithConfig(*chartValues, pushgatewayConfigValues)
 	if err != nil {
@@ -269,7 +266,7 @@ func (op IntegratedServiceOperator) installPrometheusOperator(
 		clusterID: cluster.GetID(),
 	}
 
-	alertmanagerValues, err := valuesManager.generateAlertmanagerChartValues(ctx, spec.Alertmanager, alertmanagerSecretName, op.config.Images.Alertmanager)
+	alertmanagerValues, err := valuesManager.generateAlertmanagerChartValues(ctx, spec.Alertmanager, alertmanagerSecretName)
 	if err != nil {
 		return errors.WrapIf(err, "failed to generate Alertmanager chart values")
 	}
@@ -278,37 +275,37 @@ func (op IntegratedServiceOperator) installPrometheusOperator(
 	var chartValues = &prometheusOperatorValues{
 		PrometheusOperator: operatorSpecValues{
 			Image: imageValues{
-				Repository: op.config.Images.Operator.Repository,
-				Tag:        op.config.Images.Operator.Tag,
+				Repository: operatorRepoName,
+				Tag:        operatorImageTag,
 			},
 			CleanupCustomResource: true,
 		},
-		Grafana:      valuesManager.generateGrafanaChartValues(spec.Grafana, grafanaUser, grafanaPass, op.config.Images.Grafana),
+		Grafana:      valuesManager.generateGrafanaChartValues(spec.Grafana, grafanaUser, grafanaPass),
 		Alertmanager: alertmanagerValues,
-		Prometheus:   valuesManager.generatePrometheusChartValues(ctx, spec.Prometheus, prometheusSecretName, op.config.Images.Prometheus),
+		Prometheus:   valuesManager.generatePrometheusChartValues(ctx, spec.Prometheus, prometheusSecretName),
 	}
 
 	if spec.Exporters.Enabled {
 		chartValues.KubeStateMetrics = valuesManager.generateKubeStateMetricsChartValues(spec.Exporters.KubeStateMetrics)
 		if spec.Exporters.KubeStateMetrics.Enabled {
 			chartValues.KsmValues = &ksmValues{Image: imageValues{
-				Repository: op.config.Images.Kubestatemetrics.Repository,
-				Tag:        op.config.Images.Kubestatemetrics.Tag,
+				Repository: kubeStateMetricsRepoName,
+				Tag:        kubeStateMetricsImageTag,
 			}}
 		}
 
 		chartValues.NodeExporter = valuesManager.generateNodeExporterChartValues(spec.Exporters.NodeExporter)
 		if spec.Exporters.NodeExporter.Enabled {
 			chartValues.NeValues = &neValues{Image: imageValues{
-				Repository: op.config.Images.Nodeexporter.Repository,
-				Tag:        op.config.Images.Nodeexporter.Tag,
+				Repository: nodeExporterRepoName,
+				Tag:        nodeExporterImageTag,
 			}}
 		}
 	}
 
-	operatorConfigValues, err := copystructure.Copy(op.config.Charts.Operator.Values)
+	operatorConfigValues, err := op.config.Charts.Operator.Values.ToMap()
 	if err != nil {
-		return errors.WrapIf(err, "failed to copy operator values")
+		return errors.WrapIf(err, "failed to convert operator values")
 	}
 	valuesBytes, err := mergeOperatorValuesWithConfig(*chartValues, operatorConfigValues)
 	if err != nil {
@@ -567,7 +564,6 @@ func (m chartValuesManager) generateGrafanaChartValues(
 	spec grafanaSpec,
 	username string,
 	password string,
-	config ImageConfig,
 ) *grafanaValues {
 	if spec.Enabled {
 		return &grafanaValues{
@@ -587,8 +583,8 @@ func (m chartValuesManager) generateGrafanaChartValues(
 			}},
 			DefaultDashboardsEnabled: spec.Dashboards,
 			Image: imageValues{
-				Repository: config.Repository,
-				Tag:        config.Tag,
+				Repository: grafanaRepoName,
+				Tag:        grafanaImageTag,
 			},
 			Persistence: persistenceValues{
 				Enabled: true,
@@ -614,7 +610,6 @@ func (m chartValuesManager) generateAlertmanagerChartValues(
 	ctx context.Context,
 	spec alertmanagerSpec,
 	secretName string,
-	config ImageConfig,
 ) (*alertmanagerValues, error) {
 	if spec.Enabled {
 
@@ -641,8 +636,8 @@ func (m chartValuesManager) generateAlertmanagerChartValues(
 			Spec: baseSpecValues{
 				RoutePrefix: spec.Ingress.Path,
 				Image: imageValues{
-					Repository: config.Repository,
-					Tag:        config.Tag,
+					Repository: alertmanagerRepoName,
+					Tag:        alertmanagerImageTag,
 				},
 			},
 			Config: alertmanagerConfig,
@@ -660,7 +655,6 @@ func (m chartValuesManager) generatePrometheusChartValues(
 	ctx context.Context,
 	spec prometheusSpec,
 	secretName string,
-	config ImageConfig,
 ) *prometheusValues {
 	if spec.Enabled {
 
@@ -692,8 +686,8 @@ func (m chartValuesManager) generatePrometheusChartValues(
 				baseSpecValues: baseSpecValues{
 					RoutePrefix: spec.Ingress.Path,
 					Image: imageValues{
-						Repository: config.Repository,
-						Tag:        config.Tag,
+						Repository: prometheusRepoName,
+						Tag:        prometheusImageTag,
 					},
 				},
 				RetentionSize: fmt.Sprintf("%.2fGiB", float64(spec.Storage.Size)*0.95),

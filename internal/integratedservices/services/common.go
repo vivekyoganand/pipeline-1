@@ -15,11 +15,35 @@
 package services
 
 import (
+	"strings"
+
 	"emperror.dev/errors"
+	"github.com/ghodss/yaml"
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/banzaicloud/pipeline/internal/integratedservices"
 )
+
+type ValuesConfig string
+
+func NewValuesConfig(mapIn map[string]interface{}) (ValuesConfig, error) {
+	out, err := yaml.Marshal(mapIn)
+	if err != nil {
+		return "", errors.WrapIf(err, "failed to create values config")
+	}
+	return ValuesConfig(out), nil
+}
+
+func (v ValuesConfig) ToMap() (map[string]interface{}, error) {
+	var out = make(map[string]interface{})
+	var trimmedStr = strings.TrimSpace(string(v))
+	err := yaml.Unmarshal([]byte(trimmedStr), &out)
+	if err != nil {
+		return nil, errors.WrapIf(err, "error during converting to map")
+	}
+
+	return out, nil
+}
 
 // BindIntegratedServiceSpec binds an incoming integrated service specific raw spec (json) into the appropriate struct
 func BindIntegratedServiceSpec(inputSpec integratedservices.IntegratedServiceSpec, boundSpec interface{}) error {
