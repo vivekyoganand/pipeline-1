@@ -30,6 +30,7 @@ import (
 	"github.com/banzaicloud/pipeline/internal/integratedservices/services/logging"
 	"github.com/banzaicloud/pipeline/internal/integratedservices/services/monitoring"
 	"github.com/banzaicloud/pipeline/internal/integratedservices/services/vault"
+	"github.com/banzaicloud/pipeline/pkg/cluster"
 )
 
 // AuthOIDCConfig contains OIDC auth configuration.
@@ -94,6 +95,9 @@ type ClusterConfig struct {
 	Namespace string
 
 	Labels clusterconfig.LabelConfig
+
+	// Posthook configs
+	PostHook cluster.PostHookConfig
 
 	// Features
 	Vault        ClusterVaultConfig
@@ -483,6 +487,12 @@ func Configure(v *viper.Viper, _ *pflag.FlagSet) {
 	v.SetDefault("cluster::securityScan::anchore::password", "")
 
 	v.SetDefault("cluster::expiry::enabled", true)
+
+	// ingress controller config
+	v.SetDefault("cluster::posthook::traefik::ssl::enabled", true)
+	v.SetDefault("cluster::posthook::traefik::ssl::generateTLS", true)
+	v.SetDefault("cluster::posthook::traefik::ssl::defaultCN", "")
+	v.SetDefault("cluster::posthook::traefik::ssl::defaultSANList", []string{})
 
 	v.SetDefault("cluster::disasterRecovery::enabled", true)
 	v.SetDefault("cluster::disasterRecovery::namespace", "")
