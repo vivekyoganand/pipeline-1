@@ -18,6 +18,8 @@ import (
 	"reflect"
 
 	"emperror.dev/errors"
+
+	"github.com/banzaicloud/pipeline/pkg/values"
 )
 
 func min(x, y int) int {
@@ -60,6 +62,63 @@ func Merge(dst, src interface{}) (interface{}, error) {
 			return src, nil
 
 		case object:
+			if dstV == nil { // this is not the same as dst == nil
+				return src, nil
+			}
+
+			for key := range srcV {
+				val, err := Merge(dstV[key], srcV[key])
+				if err != nil {
+					return dst, err
+				}
+
+				dstV[key] = val
+			}
+
+			return dstV, nil
+
+		case values.Config:
+			if dstV == nil { // this is not the same as dst == nil
+				return src, nil
+			}
+
+			for key := range srcV {
+				val, err := Merge(dstV[key], srcV[key])
+				if err != nil {
+					return dst, err
+				}
+
+				dstV[key] = val
+			}
+
+			return dstV, nil
+		}
+
+	case values.Config:
+		switch srcV := src.(type) {
+		case nil: // null
+			return dst, nil
+
+		case array, boolean, number, string:
+			return src, nil
+
+		case object:
+			if dstV == nil { // this is not the same as dst == nil
+				return src, nil
+			}
+
+			for key := range srcV {
+				val, err := Merge(dstV[key], srcV[key])
+				if err != nil {
+					return dst, err
+				}
+
+				dstV[key] = val
+			}
+
+			return dstV, nil
+
+		case values.Config:
 			if dstV == nil { // this is not the same as dst == nil
 				return src, nil
 			}

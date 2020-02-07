@@ -19,6 +19,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/banzaicloud/pipeline/pkg/values"
 )
 
 func TestMerge(t *testing.T) {
@@ -121,6 +123,51 @@ func TestMerge(t *testing.T) {
 			},
 			Res: obj{
 				"foo": true,
+			},
+		},
+		"values.Config dst, object src": {
+			Dst: values.Config{
+				"foo": false,
+				"bar": false,
+			},
+			Src: obj{
+				"bar": true,
+				"buz": true,
+			},
+			Res: values.Config{
+				"foo": false,
+				"bar": true,
+				"buz": true,
+			},
+		},
+		"object dst, values.Config src": {
+			Dst: obj{
+				"foo": false,
+				"bar": false,
+			},
+			Src: values.Config{
+				"bar": true,
+				"buz": true,
+			},
+			Res: obj{
+				"foo": false,
+				"bar": true,
+				"buz": true,
+			},
+		},
+		"values.Config dst, values.Config src": {
+			Dst: values.Config{
+				"foo": false,
+				"bar": false,
+			},
+			Src: values.Config{
+				"bar": true,
+				"buz": true,
+			},
+			Res: values.Config{
+				"foo": false,
+				"bar": true,
+				"buz": true,
 			},
 		},
 	}

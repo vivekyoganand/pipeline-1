@@ -16,6 +16,8 @@ package monitoring
 
 import (
 	"emperror.dev/errors"
+
+	"github.com/banzaicloud/pipeline/pkg/values"
 )
 
 // Config contains configuration for the monitoring integrated service.
@@ -94,7 +96,7 @@ type ChartsConfig struct {
 type ChartConfig struct {
 	Chart   string
 	Version string
-	Values  map[string]interface{}
+	Values  values.Config
 }
 
 func (c ChartConfig) Validate() error {

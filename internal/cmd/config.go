@@ -403,7 +403,10 @@ func Configure(v *viper.Viper, _ *pflag.FlagSet) {
 
 	v.SetDefault("cluster::monitoring::charts::pushgateway::chart", "stable/prometheus-pushgateway")
 	v.SetDefault("cluster::monitoring::charts::pushgateway::version", "1.2.13")
-	v.SetDefault("cluster::monitoring::charts::pushgateway::values", map[string]interface{}{})
+	v.SetDefault("cluster::monitoring::charts::pushgateway::values", `
+serviceMonitor:
+  enabled: true
+`)
 	v.SetDefault("cluster::monitoring::images::pushgateway::repository", "prom/pushgateway")
 	v.SetDefault("cluster::monitoring::images::pushgateway::tag", "v1.0.1")
 
