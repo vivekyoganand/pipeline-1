@@ -92,10 +92,26 @@ func (m IntegratedServiceManager) GetOutput(ctx context.Context, clusterID uint,
 	var pushgatewayValues = m.config.Charts.Pushgateway.Values
 
 	out := integratedservices.IntegratedServiceOutput{
-		"grafana":      m.getComponentOutput(ctx, clusterID, newGrafanaOutputHelper(kubeConfig, boundSpec), endpoints, m.config.Namespace, prometheusOperatorReleaseName, operatorValues, m.config.Images.Grafana),
-		"prometheus":   m.getComponentOutput(ctx, clusterID, newPrometheusOutputHelper(kubeConfig, boundSpec), endpoints, m.config.Namespace, prometheusOperatorReleaseName, operatorValues, m.config.Images.Prometheus),
-		"alertmanager": m.getComponentOutput(ctx, clusterID, newAlertmanagerOutputHelper(kubeConfig, boundSpec), endpoints, m.config.Namespace, prometheusOperatorReleaseName, operatorValues, m.config.Images.Alertmanager),
-		"pushgateway":  m.getComponentOutput(ctx, clusterID, newPushgatewayOutputHelper(kubeConfig, boundSpec), endpoints, m.config.Namespace, prometheusPushgatewayReleaseName, pushgatewayValues, m.config.Images.Pushgateway),
+		"grafana": m.getComponentOutput(ctx, clusterID, newGrafanaOutputHelper(kubeConfig, boundSpec), endpoints,
+			m.config.Namespace, prometheusOperatorReleaseName, operatorValues, ImageConfig{
+				Repository: repoGrafana,
+				Tag:        tagGrafana,
+			}),
+		"prometheus": m.getComponentOutput(ctx, clusterID, newPrometheusOutputHelper(kubeConfig, boundSpec), endpoints,
+			m.config.Namespace, prometheusOperatorReleaseName, operatorValues, ImageConfig{
+				Repository: repoPrometheus,
+				Tag:        tagPrometheus,
+			}),
+		"alertmanager": m.getComponentOutput(ctx, clusterID, newAlertmanagerOutputHelper(kubeConfig, boundSpec), endpoints,
+			m.config.Namespace, prometheusOperatorReleaseName, operatorValues, ImageConfig{
+				Repository: repoAlertmanager,
+				Tag:        tagAlertmanager,
+			}),
+		"pushgateway": m.getComponentOutput(ctx, clusterID, newPushgatewayOutputHelper(kubeConfig, boundSpec), endpoints,
+			m.config.Namespace, prometheusPushgatewayReleaseName, pushgatewayValues, ImageConfig{
+				Repository: repoPushgateway,
+				Tag:        tagPushgateway,
+			}),
 		"prometheusOperator": map[string]interface{}{
 			"version": m.config.Charts.Operator.Version,
 		},
@@ -144,9 +160,10 @@ func (m IntegratedServiceManager) getComponentOutput(
 
 	writeSecretID(ctx, o, clusterID, out)
 	writeURL(o, endpoints, releaseName, out)
-	// TODO (colin): put back after the values can came from config
-	// writeVersion(o, values, out)
-	out[versionKey] = config.Tag
+	writeVersion(o, values, out)
+	if v, has := out[versionKey]; v == "" || !has {
+		out[versionKey] = config.Tag
+	}
 	if err := writeServiceURL(o, m.endpointsService, pipelineSystemNamespace, out); err != nil {
 		m.logger.Warn(fmt.Sprintf("failed to get service url: %s", err.Error()))
 	}

@@ -219,8 +219,8 @@ func (op IntegratedServiceOperator) installPrometheusPushGateway(
 ) error {
 	var chartValues = &prometheusPushgatewayValues{
 		Image: imageValues{
-			Repository: op.config.Images.Pushgateway.Repository,
-			Tag:        op.config.Images.Pushgateway.Tag,
+			Repository: repoPushgateway,
+			Tag:        tagPushgateway,
 		},
 		ServiceMonitor: serviceMonitorValues{
 			Enabled:   true,
@@ -228,11 +228,7 @@ func (op IntegratedServiceOperator) installPrometheusPushGateway(
 		},
 	}
 
-	pushgatewayConfigValues, err := copystructure.Copy(op.config.Charts.Pushgateway.Values)
-	if err != nil {
-		return errors.WrapIf(err, "failed to copy pushgateway values")
-	}
-	valuesBytes, err := mergeOperatorValuesWithConfig(*chartValues, pushgatewayConfigValues)
+	valuesBytes, err := mergeOperatorValuesWithConfig(*chartValues, map[string]interface{}(op.config.Charts.Pushgateway.Values))
 	if err != nil {
 		return errors.WrapIf(err, "failed to merge pushgateway values with config")
 	}
@@ -273,7 +269,10 @@ func (op IntegratedServiceOperator) installPrometheusOperator(
 		clusterID: cluster.GetID(),
 	}
 
-	alertmanagerValues, err := valuesManager.generateAlertmanagerChartValues(ctx, spec.Alertmanager, alertmanagerSecretName, op.config.Images.Alertmanager)
+	alertmanagerValues, err := valuesManager.generateAlertmanagerChartValues(ctx, spec.Alertmanager, alertmanagerSecretName, ImageConfig{
+		Repository: repoAlertmanager,
+		Tag:        tagAlertmanager,
+	})
 	if err != nil {
 		return errors.WrapIf(err, "failed to generate Alertmanager chart values")
 	}
@@ -282,42 +281,51 @@ func (op IntegratedServiceOperator) installPrometheusOperator(
 	var chartValues = &prometheusOperatorValues{
 		PrometheusOperator: operatorSpecValues{
 			Image: imageValues{
-				Repository: op.config.Images.Operator.Repository,
-				Tag:        op.config.Images.Operator.Tag,
+				Repository: repoOperator,
+				Tag:        tagOperator,
 			},
 			CleanupCustomResource: true,
 		},
-		Grafana:      valuesManager.generateGrafanaChartValues(spec.Grafana, grafanaUser, grafanaPass, op.config.Images.Grafana),
+		Grafana: valuesManager.generateGrafanaChartValues(spec.Grafana, grafanaUser, grafanaPass, ImageConfig{
+			Repository: repoGrafana,
+			Tag:        tagGrafana,
+		}),
 		Alertmanager: alertmanagerValues,
-		Prometheus:   valuesManager.generatePrometheusChartValues(ctx, spec.Prometheus, prometheusSecretName, op.config.Images.Prometheus),
+		Prometheus: valuesManager.generatePrometheusChartValues(ctx, spec.Prometheus, prometheusSecretName, ImageConfig{
+			Repository: repoPrometheus,
+			Tag:        tagPrometheus,
+		}),
 	}
 
 	if spec.Exporters.Enabled {
 		chartValues.KubeStateMetrics = valuesManager.generateKubeStateMetricsChartValues(spec.Exporters.KubeStateMetrics)
 		if spec.Exporters.KubeStateMetrics.Enabled {
 			chartValues.KsmValues = &ksmValues{Image: imageValues{
-				Repository: op.config.Images.Kubestatemetrics.Repository,
-				Tag:        op.config.Images.Kubestatemetrics.Tag,
+				Repository: repoKubeStateMetrics,
+				Tag:        tagKubeStateMetrics,
 			}}
 		}
 
 		chartValues.NodeExporter = valuesManager.generateNodeExporterChartValues(spec.Exporters.NodeExporter)
 		if spec.Exporters.NodeExporter.Enabled {
 			chartValues.NeValues = &neValues{Image: imageValues{
-				Repository: op.config.Images.Nodeexporter.Repository,
-				Tag:        op.config.Images.Nodeexporter.Tag,
+				Repository: repoNodeExporter,
+				Tag:        tagNodeExporter,
 			}}
 		}
 	}
 
-	operatorConfigValues, err := copystructure.Copy(op.config.Charts.Operator.Values)
+	operatorConfigValues, err := copystructure.Copy(map[string]interface{}(op.config.Charts.Operator.Values))
 	if err != nil {
 		return errors.WrapIf(err, "failed to copy operator values")
 	}
-	valuesBytes, err := mergeOperatorValuesWithConfig(*chartValues, operatorConfigValues)
+
+	valuesBytes, err := mergeOperatorValuesWithConfig(operatorConfigValues, *chartValues)
 	if err != nil {
 		return errors.WrapIf(err, "failed to merge operator values with config")
 	}
+
+	fmt.Println("values: ", string(valuesBytes))
 
 	return op.helmService.ApplyDeployment(
 		ctx,
@@ -330,13 +338,13 @@ func (op IntegratedServiceOperator) installPrometheusOperator(
 	)
 }
 
-func mergeOperatorValuesWithConfig(chartValues interface{}, configValues interface{}) ([]byte, error) {
+func mergeOperatorValuesWithConfig(configValues interface{}, chartValues interface{}) ([]byte, error) {
 	out, err := jsonstructure.Encode(chartValues)
 	if err != nil {
 		return nil, errors.WrapIf(err, "failed to encode chart values")
 	}
 
-	result, err := util.Merge(configValues, out)
+	result, err := util.Merge(out, configValues)
 	if err != nil {
 		return nil, errors.WrapIf(err, "failed to merge values")
 	}

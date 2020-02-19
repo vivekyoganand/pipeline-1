@@ -187,14 +187,21 @@ dex:
 #                version: "8.5.14"
 #
 #                # See https://github.com/helm/charts/tree/master/stable/prometheus-operator for details
-#                values: {}
+#                values: |
+#                    prometheus:
+#                      ingress:
+#                        annotations:
+#                          traefik.frontend.rule.type: PathPrefix
+#                          traefik.ingress.kubernetes.io/ssl-redirect: "true"
 #
 #            pushgateway:
 #                chart: "stable/prometheus-pushgateway"
 #                version: "1.2.13"
 #
 #                # See https://github.com/helm/charts/tree/master/stable/prometheus-pushgateway for details
-#                values: {}
+#                values: |
+#                    ingress:
+#                        enabled: true
 #
 #    logging:
 #        enabled: true

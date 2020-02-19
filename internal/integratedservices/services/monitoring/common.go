@@ -39,6 +39,21 @@ const (
 
 	alertmanagerProviderSlack     = "slack"
 	alertmanagerProviderPagerDuty = "pagerDuty"
+
+	repoOperator         = "quay.io/coreos/prometheus-operator"
+	tagOperator          = "v0.34.0"
+	repoPrometheus       = "quay.io/prometheus/prometheus"
+	tagPrometheus        = "v2.13.1"
+	repoAlertmanager     = "quay.io/prometheus/alertmanager"
+	tagAlertmanager      = "v0.19.0"
+	repoGrafana          = "grafana/grafana"
+	tagGrafana           = "6.5.2"
+	repoKubeStateMetrics = "quay.io/coreos/kube-state-metrics"
+	tagKubeStateMetrics  = "v1.9.3"
+	repoNodeExporter     = "quay.io/prometheus/node-exporter"
+	tagNodeExporter      = "v0.18.1"
+	repoPushgateway      = "prom/pushgateway"
+	tagPushgateway       = "v1.0.1"
 )
 
 func getClusterNameSecretTag(clusterName string) string {
