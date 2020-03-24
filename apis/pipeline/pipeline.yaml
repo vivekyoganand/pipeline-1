@@ -3659,6 +3659,25 @@ paths:
                 default:
                     $ref: '#/components/responses/Error'
 
+        patch:
+            operationId: UpdateNodePool
+            summary: Update an existing node pool
+            security:
+                - bearerAuth: []
+            tags:
+                - clusters
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/NodePoolPatch'
+            responses:
+                202:
+                    description: Node pool update in progress
+                default:
+                    $ref: '#/components/responses/Error'
+
     /api/v1/orgs/{orgId}/clusters/{id}/nodepools/{name}:
         parameters:
             - $ref: '#/components/parameters/orgId'
@@ -4374,7 +4393,7 @@ components:
                     example: "Standard_B2ms"
 
                     #######
-        
+
         CreatePKEOnVsphereClusterRequest:
             allOf:
                 - $ref: '#/components/schemas/CreatePKEClusterRequestBase'
@@ -4468,6 +4487,10 @@ components:
             oneOf:
                 - $ref: '#/components/schemas/EksNodePool'
 
+        NodePoolPatch:
+            oneOf:
+                - $ref: '#/components/schemas/EksNodePoolPatch'
+
         GenericNodePool:
             description: Generic node pool object for all cluster distributions.
             type: object
@@ -4478,6 +4501,21 @@ components:
                 name:
                     description: Node pool name.
                     type: string
+                size:
+                    description: Node pool size.
+                    type: integer
+                labels:
+                    description: Node pool labels.
+                    type: object
+                    additionalProperties:
+                        type: string
+                    example:
+                        example.io/label1: value1
+
+        GenericNodePoolPatch:
+            description: Generic node pool patch object for all cluster distributions.
+            type: object
+            properties:
                 size:
                     description: Node pool size.
                     type: integer
@@ -4509,6 +4547,23 @@ components:
                     type: integer
                     example: 5
 
+        NodePoolAutoScalingPatch:
+            description: Node pool auto scaling settings patch.
+            type: object
+            properties:
+                enabled:
+                    description: Enable node pool autoscaling.
+                    type: boolean
+                minSize:
+                    description: Minimum node pool size.
+                    type: integer
+                    minimum: 0
+                    example: 1
+                maxSize:
+                    description: Maximum node pool size.
+                    type: integer
+                    example: 5
+
         EksNodePool:
             description: Node pool object for an EKS cluster.
             type: object
@@ -4521,6 +4576,32 @@ components:
                     properties:
                         autoscaling:
                             $ref: '#/components/schemas/NodePoolAutoScaling'
+                        instanceType:
+                            description: Machine instance type.
+                            type: string
+                            example: m4.xlarge
+                        image:
+                            description: Instance AMI.
+                            type: string
+                            example: ami-06d1667f
+                        spotPrice:
+                            description: The upper limit price for the requested spot instance. If this field is left empty or 0 passed in on-demand instances used instead of spot instances.
+                            type: string
+                            example: "0.2"
+                        subnetId:
+                            type: string
+                            example: "subnet-xxxxxxxxxxxxxx"
+
+        EksNodePoolPatch:
+            description: Node pool patch object for an EKS cluster.
+            type: object
+            allOf:
+                - $ref: '#/components/schemas/GenericNodePoolPatch'
+                -
+                    type: object
+                    properties:
+                        autoscaling:
+                            $ref: '#/components/schemas/NodePoolAutoScalingPatch'
                         instanceType:
                             description: Machine instance type.
                             type: string
