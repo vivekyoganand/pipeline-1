@@ -17352,6 +17352,137 @@ paths:
       tags:
       - integrated services
   /api/v1/orgs/{orgId}/clusters/{id}/nodepools:
+    patch:
+      operationId: UpdateNodePool
+      parameters:
+      - description: Organization identifier
+        explode: false
+        in: path
+        name: orgId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - description: Cluster identifier
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodePoolPatch'
+        required: true
+      responses:
+        "202":
+          description: Node pool update in progress
+        default:
+          content:
+            application/json:
+              examples:
+                BadRequest:
+                  value:
+                    code: 400
+                    message: Invalid request
+                    error: Failed to parse request.
+                Unauthorized:
+                  value:
+                    code: 401
+                    message: Unauthorized
+                    error: Unauthorized
+                OrganizationNotFound:
+                  value:
+                    code: 404
+                    message: Organization not found
+                    error: Organization not found
+                SecretAlreadyExists:
+                  value:
+                    code: 409
+                    message: Secret already exists
+                    error: Secret already exists
+                InternalServerError:
+                  value:
+                    code: 500
+                    message: Something went wrong
+                    error: Something went wrong
+              schema:
+                $ref: '#/components/schemas/CommonError'
+            application/problem+json:
+              examples:
+                BadRequest:
+                  value:
+                    type: about:blank
+                    title: Invalid request
+                    status: 400
+                    detail: Failed to parse request.
+                    instance: ""
+                    code: 400
+                    message: Failed to parse request.
+                    error: Invalid request
+                Unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+                    detail: You are unauthorized to access this resource.
+                    instance: ""
+                    code: 401
+                    message: You are unauthorized to access this resource.
+                    error: Unauthorized
+                AccessDenied:
+                  value:
+                    type: about:blank
+                    title: Access denied
+                    status: 403
+                    detail: You are unauthorized to perform this action access this
+                      resource.
+                    instance: ""
+                    code: 403
+                    message: You are unauthorized to perform this action access this
+                      resource.
+                    error: Access denied
+                OrganizationNotFound:
+                  value:
+                    type: about:blank
+                    title: Organization not found
+                    status: 404
+                    detail: Organization not found
+                    instance: ""
+                    code: 404
+                    message: Organization not found
+                    error: Organization not found
+                SecretAlreadyExists:
+                  value:
+                    type: about:blank
+                    title: Secret already exists
+                    status: 409
+                    detail: Secret already exists
+                    instance: ""
+                    code: 409
+                    message: Secret already exists
+                    error: Secret already exists
+                InternalServerError:
+                  value:
+                    type: about:blank
+                    title: Internal server error
+                    status: 500
+                    detail: Something went wrong
+                    instance: ""
+                    code: 500
+                    message: Something went wrong
+                    error: Internal server error
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      security:
+      - bearerAuth: []
+      summary: Update an existing node pool
+      tags:
+      - clusters
     post:
       description: Add new node pool to a cluster
       operationId: CreateNodePool
@@ -18554,6 +18685,9 @@ components:
     NodePool:
       oneOf:
       - $ref: '#/components/schemas/EksNodePool'
+    NodePoolPatch:
+      oneOf:
+      - $ref: '#/components/schemas/EksNodePoolPatch'
     GenericNodePool:
       description: Generic node pool object for all cluster distributions.
       properties:
@@ -18574,6 +18708,20 @@ components:
       - name
       - size
       type: object
+    GenericNodePoolPatch:
+      description: Generic node pool patch object for all cluster distributions.
+      properties:
+        size:
+          description: Node pool size.
+          type: integer
+        labels:
+          additionalProperties:
+            type: string
+          description: Node pool labels.
+          example:
+            example.io/label1: value1
+          type: object
+      type: object
     NodePoolAutoScaling:
       description: Node pool auto scaling settings.
       properties:
@@ -18593,11 +18741,33 @@ components:
       - maxSize
       - minSize
       type: object
+    NodePoolAutoScalingPatch:
+      description: Node pool auto scaling settings patch.
+      properties:
+        enabled:
+          description: Enable node pool autoscaling.
+          type: boolean
+        minSize:
+          description: Minimum node pool size.
+          example: 1
+          minimum: 0
+          type: integer
+        maxSize:
+          description: Maximum node pool size.
+          example: 5
+          type: integer
+      type: object
     EksNodePool:
       allOf:
       - $ref: '#/components/schemas/GenericNodePool'
       - $ref: '#/components/schemas/EksNodePool_allOf'
       description: Node pool object for an EKS cluster.
+      type: object
+    EksNodePoolPatch:
+      allOf:
+      - $ref: '#/components/schemas/GenericNodePoolPatch'
+      - $ref: '#/components/schemas/EksNodePoolPatch_allOf'
+      description: Node pool patch object for an EKS cluster.
       type: object
     EKSNodePool:
       properties:
@@ -22660,6 +22830,27 @@ components:
           type: string
       required:
       - instanceType
+    EksNodePoolPatch_allOf:
+      properties:
+        autoscaling:
+          $ref: '#/components/schemas/NodePoolAutoScalingPatch'
+        instanceType:
+          description: Machine instance type.
+          example: m4.xlarge
+          type: string
+        image:
+          description: Instance AMI.
+          example: ami-06d1667f
+          type: string
+        spotPrice:
+          description: The upper limit price for the requested spot instance. If this
+            field is left empty or 0 passed in on-demand instances used instead of
+            spot instances.
+          example: "0.2"
+          type: string
+        subnetId:
+          example: subnet-xxxxxxxxxxxxxx
+          type: string
     CreateEKSProperties_eks:
       properties:
         version:
