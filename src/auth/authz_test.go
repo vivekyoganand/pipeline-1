@@ -24,8 +24,10 @@ import (
 	"github.com/banzaicloud/pipeline/internal/common"
 )
 
+const commonName = "pipeline"
+
 func TestRbacEnforcer_Enforce_NoOrgIsAllowed(t *testing.T) {
-	enforcer := NewRbacEnforcer(nil, NewServiceAccountService(), common.NoopLogger{})
+	enforcer := NewRbacEnforcer(nil, NewServiceAccountService(commonName), common.NoopLogger{})
 
 	ok, err := enforcer.Enforce(nil, &User{}, "/", "GET")
 	require.NoError(t, err)
@@ -34,7 +36,7 @@ func TestRbacEnforcer_Enforce_NoOrgIsAllowed(t *testing.T) {
 }
 
 func TestRbacEnforcer_Enforce_NoUserIsNotAllowed(t *testing.T) {
-	enforcer := NewRbacEnforcer(nil, NewServiceAccountService(), common.NoopLogger{})
+	enforcer := NewRbacEnforcer(nil, NewServiceAccountService(commonName), common.NoopLogger{})
 
 	ok, err := enforcer.Enforce(&Organization{}, nil, "/", "GET")
 	require.NoError(t, err)
@@ -84,7 +86,7 @@ func TestRbacEnforcer_Enforce_VirtualUser(t *testing.T) {
 		test := test
 
 		t.Run("", func(t *testing.T) {
-			enforcer := NewRbacEnforcer(nil, NewServiceAccountService(), common.NoopLogger{})
+			enforcer := NewRbacEnforcer(nil, NewServiceAccountService(commonName), common.NoopLogger{})
 
 			ok, err := enforcer.Enforce(&test.organization, &test.user, "/", "GET")
 			require.NoError(t, err)
@@ -127,7 +129,7 @@ func TestRbacEnforcer_Enforce_VirtualUser_Invalid(t *testing.T) {
 		test := test
 
 		t.Run("", func(t *testing.T) {
-			enforcer := NewRbacEnforcer(nil, NewServiceAccountService(), common.NoopLogger{})
+			enforcer := NewRbacEnforcer(nil, NewServiceAccountService(commonName), common.NoopLogger{})
 
 			ok, err := enforcer.Enforce(&test.organization, &test.user, "/", "GET")
 			if test.error {
@@ -153,7 +155,7 @@ func TestRbacEnforcer_Enforce_NotAMember(t *testing.T) {
 	roleSource := &MockRoleSource{}
 	roleSource.On("FindUserRole", mock.Anything, org.ID, user.ID).Return("", false, nil)
 
-	enforcer := NewRbacEnforcer(roleSource, NewServiceAccountService(), common.NoopLogger{})
+	enforcer := NewRbacEnforcer(roleSource, NewServiceAccountService(commonName), common.NoopLogger{})
 
 	ok, err := enforcer.Enforce(&org, &user, "/", "GET")
 	require.NoError(t, err)
@@ -253,7 +255,7 @@ func TestRbacEnforcer_Enforce(t *testing.T) {
 			roleSource := &MockRoleSource{}
 			roleSource.On("FindUserRole", mock.Anything, org.ID, user.ID).Return(test.role, true, nil)
 
-			enforcer := NewRbacEnforcer(roleSource, NewServiceAccountService(), common.NoopLogger{})
+			enforcer := NewRbacEnforcer(roleSource, NewServiceAccountService(commonName), common.NoopLogger{})
 
 			ok, err := enforcer.Enforce(&org, &user, test.path, test.method)
 			require.NoError(t, err)

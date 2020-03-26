@@ -34,6 +34,7 @@ pipeline:
     caCertFile: ""
     certFile: ""
     keyFile: ""
+#    commonName: "pipeline"
 
     external:
         # Base URL where the end users can reach this pipeline instance

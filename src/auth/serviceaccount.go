@@ -24,10 +24,12 @@ type ServiceAccountService interface {
 	IsAdminServiceAccount(*User) bool
 }
 
-type serviceAccountService struct{}
+type serviceAccountService struct {
+	commonName string
+}
 
-func NewServiceAccountService() ServiceAccountService {
-	return serviceAccountService{}
+func NewServiceAccountService(commonName string) ServiceAccountService {
+	return serviceAccountService{commonName: commonName}
 }
 
 func (s serviceAccountService) ExtractServiceAccount(r *http.Request) *User {
@@ -40,7 +42,7 @@ func (s serviceAccountService) ExtractServiceAccount(r *http.Request) *User {
 chains:
 	for _, vcc := range r.TLS.VerifiedChains {
 		for _, vc := range vcc {
-			if vc.Subject.CommonName == "pipeline" {
+			if vc.Subject.CommonName == s.commonName {
 				cert = vc
 				break chains
 			}
@@ -63,7 +65,7 @@ chains:
 func (s serviceAccountService) IsAdminServiceAccount(u *User) bool {
 	if u.ID == 0 && u.ServiceAccount {
 		switch u.Login {
-		case "pipeline":
+		case s.commonName:
 			return true
 		}
 	}

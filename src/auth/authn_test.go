@@ -36,7 +36,7 @@ func helloHandler(c *gin.Context) {
 }
 
 func newServer(t *testing.T) *httptest.Server {
-	internalHandler := newInternalHandler(NewServiceAccountService())
+	internalHandler := newInternalHandler(NewServiceAccountService(commonName))
 
 	router := gin.Default()
 	router.Use(internalHandler)

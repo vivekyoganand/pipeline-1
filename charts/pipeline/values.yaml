@@ -58,11 +58,17 @@ service:
   type: ClusterIP
   internalPort: 9090
   externalPort:  9090
+  # TLS is always enabled, when the following secrets names are
+  # not specified a Helm generated CA and certificate will be used.
   tls:
-    # TLS is always enabled, when the following secrets are not specified
-    # a Helm generated CA and certificate will be used.
+    # Name of the kubernetes.io/tls type Secret holding the
+    # CA key pair for client and server verification.
     caSecretName: ""
+    # Name of the kubernetes.io/tls type Secret holding the
+    # client/server key pair for authentication.
     secretName: ""
+    # The Common Name (CN) inside the TLS certificate.
+    commonName: ""
 
 serviceInternal:
   name: pipeline-internal

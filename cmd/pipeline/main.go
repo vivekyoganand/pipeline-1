@@ -339,7 +339,7 @@ func main() {
 		base32.StdEncoding.EncodeToString([]byte(config.Auth.Token.SigningKey)),
 	)
 	tokenManager := pkgAuth.NewTokenManager(tokenGenerator, tokenStore)
-	serviceAccountService := auth.NewServiceAccountService()
+	serviceAccountService := auth.NewServiceAccountService(config.Pipeline.CommonName)
 	auth.Init(db, cicdDB, config.Auth, tokenStore, tokenManager, organizationSyncer, serviceAccountService)
 
 	if config.Database.AutoMigrate {

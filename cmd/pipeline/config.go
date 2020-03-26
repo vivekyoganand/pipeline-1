@@ -121,6 +121,7 @@ type PipelineConfig struct {
 	CACertFile   string
 	CertFile     string
 	KeyFile      string
+	CommonName   string
 	UUID         string
 	External     struct {
 		URL      string
@@ -175,6 +176,7 @@ func configure(v *viper.Viper, p *pflag.FlagSet) {
 	v.SetDefault("pipeline::caCertFile", "")
 	v.SetDefault("pipeline::certFile", "")
 	v.SetDefault("pipeline::keyFile", "")
+	v.SetDefault("pipeline::commonName", "pipeline")
 	v.SetDefault("pipeline::uuid", "")
 	v.SetDefault("pipeline::external::url", "")
 	v.SetDefault("pipeline::external::insecure", false)
