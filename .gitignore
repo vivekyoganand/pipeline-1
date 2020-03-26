@@ -35,3 +35,7 @@ test.txt
 !/.idea/modules.xml
 !/.idea/runConfigurations/
 !/.idea/scopes/
+
+# Helm
+*.tgz
+*.lock

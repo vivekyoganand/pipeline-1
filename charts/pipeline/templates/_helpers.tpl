@@ -172,3 +172,11 @@ Source: https://stackoverflow.com/a/52024583/3027614
 {{- fail "Please specify database tls" -}}
 {{- end -}}
 {{- end -}}
+
+{{- define "pipeline-tls-secret-name" -}}
+{{- .Values.service.tls.secretName | default (printf "%s-tls" (include "pipeline.fullname" .)) -}}
+{{- end -}}
+
+{{- define "pipeline-tls-ca-secret-name" -}}
+{{- .Values.service.tls.caSecretName | default (printf "%s-ca-tls" (include "pipeline.fullname" .)) -}}
+{{- end -}}

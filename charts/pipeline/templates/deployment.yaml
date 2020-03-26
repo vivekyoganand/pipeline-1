@@ -128,10 +128,12 @@ spec:
 
         # Pipeline service and TLS
         {{- if .Values.service.tls }}
+        - name: PIPELINE_PIPELINE_CACERTFILE
+          value: /ca-tls/tls.crt
         - name: PIPELINE_PIPELINE_CERTFILE
-          value: /tls/server.crt
+          value: /tls/tls.crt
         - name: PIPELINE_PIPELINE_KEYFILE
-          value: /tls/server.key
+          value: /tls/tls.key
         - name: PIPELINECTL_API_URL
           value: "https://127.0.0.1:{{ .Values.service.internalPort }}"
         - name: PIPELINECTL_API_VERIFY
@@ -188,6 +190,8 @@ spec:
           mountPath: /vault/tls
        {{ end }}
       {{- if .Values.service.tls  }}
+        - name: pipeline-ca-tls
+          mountPath: /ca-tls
         - name: pipeline-tls
           mountPath: /tls
       {{ end }}
@@ -214,9 +218,12 @@ spec:
           secretName: {{ .Release.Name }}-vault-tls
       {{ end }}
       {{- if .Values.service.tls  }}
+      - name: pipeline-ca-tls
+        secret:
+          secretName: {{ include "pipeline-tls-ca-secret-name" . }}
       - name: pipeline-tls
         secret:
-          secretName: {{ include "pipeline.fullname" . }}-tls
+          secretName: {{ include "pipeline-tls-secret-name" . }}
       {{ end }}
       {{- if eq .Values.configuration.cluster.ingress.cert.source "file" }}
       - name: sign-ca
